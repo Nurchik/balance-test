@@ -4,20 +4,22 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.sun.org.apache.xpath.internal.operations.Bool;
+import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(schema = "public", name = "users")
 public class User {
 
+    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "id")
+    @Column
     private Long id;
 
     @Column
+    @NaturalId
     private String name;
 
     @Column
@@ -35,10 +37,12 @@ public class User {
     @Column(name = "is_admin")
     private Boolean isAdmin;
 
+    @JsonProperty("id")
     public Long getId() {
         return id;
     }
 
+    @JsonIgnore
     public void setId(Long id) {
         this.id = id;
     }

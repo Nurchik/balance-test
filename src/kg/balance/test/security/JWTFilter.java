@@ -1,9 +1,12 @@
 package kg.balance.test.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.SignatureException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import kg.balance.test.dto.BaseResponse;
+import kg.balance.test.exceptions.UserNotFound;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,27 +38,25 @@ public class JWTFilter extends OncePerRequestFilter {
                 // Сразу пытаемся получить ID пользователя. Ошибки при парсинге токена обработаем позже
                 Long userId = jwtProvider.getUserId(jwtToken);
                 UserDetails userDetails = userDetailsService.loadUserById(userId);
-                if (userDetails == null) {
-                    response.sendError(500, "User not found");
-                    return;
-                }
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails.getUsername(), null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
             filterChain.doFilter(request, response);
+        } catch (UserNotFound ex) {
+            respondWithJson(new BaseResponse(ex.getCode(), ex.getMessage()), response);
         } catch (SignatureException ex) {
-            response.sendError(500, "Invalid JWT signature");
+            respondWithJson(new BaseResponse("jwt_error", "Invalid JWT signature"), response);
         } catch (MalformedJwtException ex) {
-            response.sendError(500, "Invalid JWT token");
+            respondWithJson(new BaseResponse("jwt_error", "Invalid JWT token"), response);
         } catch (ExpiredJwtException ex) {
-            response.sendError(500, "Expired JWT token");
+            respondWithJson(new BaseResponse("jwt_error", "Expired JWT token"), response);
         } catch (UnsupportedJwtException ex) {
-            response.sendError(500, "Unsupported JWT token");
+            respondWithJson(new BaseResponse("jwt_error", "Unsupported JWT token"), response);
         } catch (IllegalArgumentException ex) {
-            response.sendError(500, "JWT claims string is empty.");
+            respondWithJson(new BaseResponse("jwt_error", "JWT claims string is empty"), response);
         } catch (Exception ex) {
-            response.sendError(500, ex.getMessage());
+            respondWithJson(new BaseResponse("unhandled_error", ex.getMessage()), response);
         }
     }
 
@@ -65,5 +66,17 @@ public class JWTFilter extends OncePerRequestFilter {
             return token.substring(7);
         }
         return null;
+    }
+
+    private void respondWithJson (BaseResponse baseResponse, HttpServletResponse response) {
+        ObjectMapper om = new ObjectMapper();
+        response.setStatus(500);
+        response.setHeader("Content-Type", "application/json");
+        response.setCharacterEncoding("UTF-8");
+        try {
+            om.writeValue(response.getWriter(), baseResponse);
+        } catch (IOException ex) {
+            // Залогируем в будущем
+        }
     }
 }

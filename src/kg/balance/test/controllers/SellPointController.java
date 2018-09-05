@@ -1,0 +1,94 @@
+package kg.balance.test.controllers;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import kg.balance.test.dto.BaseResponse;
+import kg.balance.test.dto.Result;
+import kg.balance.test.exceptions.AccessDenied;
+import kg.balance.test.exceptions.CompanyNotFound;
+import kg.balance.test.exceptions.SellPointNotFound;
+import kg.balance.test.exceptions.UserNotFound;
+import kg.balance.test.security.UserPrincipal;
+import kg.balance.test.services.SellPointService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
+import kg.balance.test.models.SellPoint;
+
+import javax.validation.Valid;
+import java.util.List;
+
+@RestController
+@RequestMapping("/sellpoints")
+public class SellPointController {
+
+    @Autowired
+    SellPointService sellPointService;
+
+    @GetMapping("/")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> getSellPoints (@RequestParam(name = "company_id", required = false) Long company_id) {
+        UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Boolean isAdmin = up.getUser().getIsAdmin();
+        Long userId = null;
+        if (!isAdmin) {
+            userId = up.getUser().getId();
+        }
+        // Админ может видеть все точки продаж, а агент - только свои. Также, если задан company_id, то фильтруем точки только этой компании
+        List<SellPoint> sellPointsList = sellPointService.getSellPoints(userId, company_id);
+        return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
+            @JsonProperty("sellpoints")
+            public List<SellPoint> sellPoints = sellPointsList;
+        }));
+    }
+
+    @GetMapping("/{sellpoint_id}")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> getSellPoint (@PathVariable Long sellpoint_id) throws SellPointNotFound, AccessDenied {
+        UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SellPoint sellPointData = sellPointService.getSellPoint(sellpoint_id);
+        // Если данная точка продаж не принадлежит данному пользователю, то ничего не показываем
+        if (up.getUser().getId().equals(sellPointData.getUserId())) {
+            throw new AccessDenied();
+        }
+        return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
+            @JsonProperty("sellpoint")
+            public SellPoint sellPoint = sellPointData;
+        }));
+    }
+
+    @PostMapping("/")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> createSellPoint (@Valid @RequestBody SellPoint sellPointData) throws UserNotFound, CompanyNotFound {
+        UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        // Администратор может задавать любого владельца (userId). Если данный пользователь не администратор, то он является владельцем новой точки
+        if (!up.getUser().getIsAdmin()) {
+            sellPointData.setUserId(up.getUser().getId());
+        }
+        SellPoint newSellPoint = sellPointService.createSellPoint(sellPointData);
+        return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
+            @JsonProperty("sellpoint")
+            public SellPoint sellPoint = newSellPoint;
+        }));
+    }
+
+    @PutMapping("/{sellpoint_id}")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> editCompany (@PathVariable Long sellpoint_id, @Valid @RequestBody SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
+        UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        SellPoint updatedSellPoint = sellPointService.updateSellPoint(up.getUser().getIsAdmin(), sellPointData);
+        return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
+            @JsonProperty("sellpoint")
+            public SellPoint sellPoint = updatedSellPoint;
+        }));
+    }
+
+    @DeleteMapping("/{sellpoint_id}")
+    @Secured({"ROLE_USER", "ROLE_ADMIN"})
+    public ResponseEntity<?> deleteCompany (@PathVariable Long sellpoint_id) throws AccessDenied, UserNotFound, SellPointNotFound {
+        UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        sellPointService.deleteSellPoint(up.getUser().getId(), sellpoint_id);
+        return ResponseEntity.ok(new BaseResponse("ok", null));
+    }
+}

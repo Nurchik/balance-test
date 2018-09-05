@@ -1,10 +1,11 @@
 package kg.balance.test.controllers;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import kg.balance.test.dto.Result;
 import kg.balance.test.models.User;
 import kg.balance.test.dto.BaseResponse;
 import kg.balance.test.security.JWTProvider;
 import kg.balance.test.dto.SigninRequest;
-import kg.balance.test.dto.SuccessfulSignupResponse;
 import kg.balance.test.security.UserPrincipal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -37,12 +38,16 @@ public class Auth {
                     new UsernamePasswordAuthenticationToken(signupData.getUsername(), signupData.getPassword())
             );
             SecurityContextHolder.getContext().setAuthentication(auth);
-            //
             UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
             User user = up.getUser();
 
             String jwtToken = tokenProvider.generateToken(user.getId());
-            return ResponseEntity.ok(new SuccessfulSignupResponse(jwtToken, user));
+            return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
+                @JsonProperty("auth_token")
+                public String authToken = jwtToken;
+                @JsonProperty("user_data")
+                public User userData = user;
+            }));
         } catch (AuthenticationException ex) {
             return ResponseEntity.status(500).body(new BaseResponse("authentication_error", ex.getMessage()));
         } catch (Exception ex) {

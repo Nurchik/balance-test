@@ -1,16 +1,19 @@
 package kg.balance.test.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(schema = "public", name = "companies")
 public class Company {
+
+    @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "id")
+    @Column()
     private Long id;
 
     @Column
@@ -19,10 +22,12 @@ public class Company {
     @Column
     private String website;
 
+    @JsonProperty("id")
     public Long getId() {
         return id;
     }
 
+    @JsonIgnore
     public void setId(Long id) {
         this.id = id;
     }

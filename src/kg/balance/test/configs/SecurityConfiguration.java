@@ -1,5 +1,6 @@
 package kg.balance.test.configs;
 
+import kg.balance.test.security.BalanceAccessDeniedHandler;
 import kg.balance.test.security.BalanceUserDetailsService;
 import kg.balance.test.security.JWTAuthenticationEntryPoint;
 import kg.balance.test.security.JWTFilter;
@@ -16,6 +17,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -51,6 +53,9 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         return super.authenticationManagerBean();
     }
 
+    @Autowired
+    BalanceAccessDeniedHandler accessDeniedHandler;
+
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http.cors().and().csrf().disable();
@@ -60,5 +65,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated();
         http.addFilterBefore(getJwtFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.exceptionHandling().accessDeniedHandler(accessDeniedHandler);
     }
 }

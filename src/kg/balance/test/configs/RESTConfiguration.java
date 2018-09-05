@@ -25,8 +25,6 @@ import java.util.Properties;
 @EnableTransactionManagement
 @EnableWebMvc
 @ComponentScan("kg.balance.test")
-@EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true, jsr250Enabled = true)
 public class RESTConfiguration implements WebMvcConfigurer {
 
     @Bean
