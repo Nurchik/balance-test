@@ -5,15 +5,19 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
+//import org.hibernate.annotations.Table;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "company_name",
+        columnNames = { "name" }
+))
 public class Company {
 
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column()
+    @Column
     private Long id;
 
     @Column

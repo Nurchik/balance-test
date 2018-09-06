@@ -3,15 +3,13 @@ package kg.balance.test.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
+@Table(schema = "public")
 public class User {
-
     @JsonIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
@@ -62,7 +60,7 @@ public class User {
     }
 
     // А сеттер оставляем, чтобы была возможность задать пароль при создании объекта
-    @JsonProperty
+    @JsonProperty("password")
     public void setPassword (String password) {
         this.password = password;
     }

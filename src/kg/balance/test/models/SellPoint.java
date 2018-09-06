@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
 public class SellPoint {
     @JsonIgnore
@@ -21,9 +20,9 @@ public class SellPoint {
 
     @JsonProperty("company_id")
     @Transient
+    @NotBlank
     private Long companyId;
 
-    @NotBlank
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "company_id", foreignKey = @ForeignKey(name = "COMPANY_ID_FK"))
@@ -42,15 +41,21 @@ public class SellPoint {
     @Column
     private float longitude;
 
-    @NotBlank
     @JsonProperty("user_id")
     @Transient
+    @NotBlank
     private Long userId;
 
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "USER_ID_FK"))
     private User user;
+
+    @PostLoad
+    public void setIdsOnLoad () {
+        setUserId(user.getId());
+        setCompanyId(company.getId());
+    }
 
     @JsonProperty("id")
     public Long getId() {
@@ -70,9 +75,7 @@ public class SellPoint {
         this.name = name;
     }
     // Здесь мы запрашиваем id Company, чтобы при получении объекта из БД, временная перемененная получила id company, которая будет отдаваться в JSON-виде
-    public Long getCompanyId() {
-        return getCompany().getId();
-    }
+    public Long getCompanyId() { return companyId; }
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
@@ -119,7 +122,7 @@ public class SellPoint {
     }
 
     public Long getUserId() {
-        return getUser().getId();
+        return userId;
     }
 
     public void setUserId(Long userId) {

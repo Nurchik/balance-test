@@ -12,17 +12,16 @@ import java.util.Date;
 @Component
 public class JWTProvider {
 
-    @Value("jwt.secret")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
-    @Value("jwt.tokenTTL")
+    @Value("${jwt.tokenTTL}")
     private int tokenTTL;
 
-    @Value("jwt.signingKey")
-    private String signingKey;
-
     public Long getUserId (String token) {
-        Claims claims = Jwts.parser().setSigningKey(signingKey).parseClaimsJws(token).getBody();
+        Claims claims = Jwts.parser()
+                .setSigningKey(jwtSecret)
+                .parseClaimsJws(token).getBody();
         return Long.parseLong(claims.getSubject());
     }
 
@@ -33,7 +32,7 @@ public class JWTProvider {
                 .setSubject(userId.toString())
                 .setIssuedAt(now)
                 .setExpiration(expirationDate)
-                .signWith(SignatureAlgorithm.ES512, jwtSecret)
+                .signWith(SignatureAlgorithm.HS256, jwtSecret)
                 .compact();
     }
 }

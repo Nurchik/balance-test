@@ -7,7 +7,7 @@ import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatche
 public class ServerInit extends AbstractAnnotationConfigDispatcherServletInitializer {
     @Override
     protected Class<?>[] getRootConfigClasses() {
-        return new Class<?>[] { RESTConfiguration.class, SecurityConfiguration.class};
+        return new Class<?>[] { RESTConfiguration.class, SecurityConfiguration.class };
     }
 
     @Override

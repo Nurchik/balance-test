@@ -65,6 +65,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
                 .antMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated();
         http.addFilterBefore(getJwtFilter(), UsernamePasswordAuthenticationFilter.class);
-        http.exceptionHandling().accessDeniedHandler(accessDeniedHandler);
+        //http.exceptionHandling().accessDeniedHandler(accessDeniedHandler);
     }
 }

@@ -3,7 +3,6 @@ package kg.balance.test.controllers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import kg.balance.test.dto.BaseResponse;
 import kg.balance.test.dto.Result;
-import kg.balance.test.exceptions.AccessDenied;
 import kg.balance.test.exceptions.CompanyNotFound;
 import kg.balance.test.exceptions.SellPointNotFound;
 import kg.balance.test.exceptions.UserNotFound;
@@ -11,6 +10,7 @@ import kg.balance.test.security.UserPrincipal;
 import kg.balance.test.services.SellPointService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -45,12 +45,12 @@ public class SellPointController {
 
     @GetMapping("/{sellpoint_id}")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
-    public ResponseEntity<?> getSellPoint (@PathVariable Long sellpoint_id) throws SellPointNotFound, AccessDenied {
+    public ResponseEntity<?> getSellPoint (@PathVariable Long sellpoint_id) throws SellPointNotFound, AccessDeniedException {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         SellPoint sellPointData = sellPointService.getSellPoint(sellpoint_id);
         // Если данная точка продаж не принадлежит данному пользователю, то ничего не показываем
         if (up.getUser().getId().equals(sellPointData.getUserId())) {
-            throw new AccessDenied();
+            throw new AccessDeniedException("Cannot access to foreign sell point");
         }
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
             @JsonProperty("sellpoint")
@@ -86,7 +86,7 @@ public class SellPointController {
 
     @DeleteMapping("/{sellpoint_id}")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
-    public ResponseEntity<?> deleteCompany (@PathVariable Long sellpoint_id) throws AccessDenied, UserNotFound, SellPointNotFound {
+    public ResponseEntity<?> deleteCompany (@PathVariable Long sellpoint_id) throws AccessDeniedException, UserNotFound, SellPointNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         sellPointService.deleteSellPoint(up.getUser().getId(), sellpoint_id);
         return ResponseEntity.ok(new BaseResponse("ok", null));
