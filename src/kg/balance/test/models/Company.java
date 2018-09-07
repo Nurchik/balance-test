@@ -3,15 +3,13 @@ package kg.balance.test.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
 //import org.hibernate.annotations.Table;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-        name = "company_name",
-        columnNames = { "name" }
-))
+@Table(name = "company", schema = "public")
 public class Company {
 
     @JsonIgnore
@@ -21,6 +19,7 @@ public class Company {
     private Long id;
 
     @Column
+    @NaturalId
     private String name;
 
     @Column

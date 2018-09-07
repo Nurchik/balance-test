@@ -1,14 +1,18 @@
 package kg.balance.test.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import javax.validation.constraints.NotBlank;
 
+
+@JsonIgnoreProperties
 public class SigninRequest {
 
     @NotBlank
-    private String username;
+    private String username = null;
 
     @NotBlank
-    private String password;
+    private String password = null;
 
     public String getUsername() {
         return username;

@@ -8,6 +8,7 @@ import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 
 @Entity
+@Table(name = "sellpoint", schema = "public")
 public class SellPoint {
     @JsonIgnore
     @Id

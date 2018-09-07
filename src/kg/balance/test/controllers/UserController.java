@@ -1,13 +1,11 @@
 package kg.balance.test.controllers;
 
-import com.fasterxml.jackson.annotation.JsonRootName;
 import kg.balance.test.dto.BaseResponse;
 import kg.balance.test.dto.Result;
 import kg.balance.test.exceptions.UserNotFound;
 import kg.balance.test.models.User;
 import kg.balance.test.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;

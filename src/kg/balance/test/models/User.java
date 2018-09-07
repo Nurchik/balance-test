@@ -6,9 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
-@Table(schema = "public")
+@Table(name = "user", schema = "public")
 public class User {
     @JsonIgnore
     @Id
@@ -33,7 +34,9 @@ public class User {
 
     @JsonProperty("is_admin")
     @Column(name = "is_admin")
-    private Boolean isAdmin;
+    private Boolean isAdmin = false;
+
+    private List<SellPoint>
 
     @JsonProperty("id")
     public Long getId() {
@@ -85,7 +88,7 @@ public class User {
         return isAdmin;
     }
 
-    public void setIsAdmin (Boolean isaAdmin) {
+    public void setIsAdmin (Boolean isAdmin) {
         this.isAdmin = isAdmin;
     }
 }
