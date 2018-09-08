@@ -1,15 +1,19 @@
 package kg.balance.test.services;
 
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.dao.BalanceDAOImpl;
+import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
 import kg.balance.test.models.User;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.PersistenceException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,9 +47,20 @@ public class UserServiceImpl implements UserService {
     }
 
     @Transactional
-    public User createUser(User user) {
+    public User createUser(User user) throws UniqueConstraintViolation {
+        if (user.getIsAdmin() == null) {
+            user.setIsAdmin(false); // по-умолчанию, ставим false
+        }
         user.setPassword(passwordEncoder.encode(user.getPassword())); // хэшируем пароль
-        return userRepository.add(user);
+        try {
+            return userRepository.add(user);
+        } catch (PersistenceException ex) {
+            // Это, конечно, слишком неправильно все ConstraintViolations приводить к UniqueConstraintViolation. Но, в этой демке, будем париться только при уникальность ;-)
+            if (ex.getCause().getClass() == ConstraintViolationException.class) {
+                throw new UniqueConstraintViolation("name");
+            }
+            throw ex;
+        }
     }
 
     /*
@@ -57,9 +72,21 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User updateUser(Long userId, User userData) throws UserNotFound {
         User user = userRepository.get(userId).orElseThrow(UserNotFound::new);
-        user.setFullName(userData.getFullName());
-        user.setPhoneNumber(userData.getPhoneNumber());
-        user.setIsAdmin(userData.getIsAdmin());
+        if (userData.getFullName() != null) {
+            user.setFullName(userData.getFullName());
+        }
+        if (userData.getPhoneNumber() != null) {
+            user.setPhoneNumber(userData.getPhoneNumber());
+        }
+        if (userData.getIsAdmin() != null) {
+            user.setIsAdmin(userData.getIsAdmin());
+        }
+        /*
+        *  Здесь мы вызываем метод update для persisted-сущности user, хотя наши изменения будут внесены в БД, когда завершится @Transactional метод
+        *  Но, т.к. во время тестов у нас есть @Transactional-аннотированный тестовый метод, то Транзакция данного метода будет выполняться в рамках транзакции Тестового метода (из-за propagation=REQUIRED), и мы не сможем в тестовом методе получать изменения сразу после завершения этого метода
+        *  userRepository.update пытается сделать merge persisted-сущности (что ничего не меняет) и, самое главное, делает flush сессии
+        * */
+        userRepository.update(user);
         return user;
     }
 

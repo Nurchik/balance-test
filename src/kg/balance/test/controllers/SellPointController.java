@@ -75,7 +75,7 @@ public class SellPointController {
 
     @PutMapping("/{sellpoint_id}")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
-    public ResponseEntity<?> editCompany (@PathVariable Long sellpoint_id, @Valid @RequestBody SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
+    public ResponseEntity<?> editSellPoint (@PathVariable Long sellpoint_id, @RequestBody SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         SellPoint updatedSellPoint = sellPointService.updateSellPoint(up.getUser().getIsAdmin(), sellPointData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
@@ -86,7 +86,7 @@ public class SellPointController {
 
     @DeleteMapping("/{sellpoint_id}")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
-    public ResponseEntity<?> deleteCompany (@PathVariable Long sellpoint_id) throws AccessDeniedException, UserNotFound, SellPointNotFound {
+    public ResponseEntity<?> deleteSellPoint (@PathVariable Long sellpoint_id) throws AccessDeniedException, UserNotFound, SellPointNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         sellPointService.deleteSellPoint(up.getUser().getId(), sellpoint_id);
         return ResponseEntity.ok(new BaseResponse("ok", null));

@@ -2,6 +2,7 @@ package kg.balance.test.controllers;
 
 import kg.balance.test.dto.BaseResponse;
 import kg.balance.test.dto.Result;
+import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
 import kg.balance.test.models.User;
 import kg.balance.test.services.UserService;
@@ -40,7 +41,7 @@ public class UserController {
 
     @PostMapping("/")
     @Secured("ROLE_ADMIN")
-    public ResponseEntity<?> createUser (@Valid @RequestBody User userData) {
+    public ResponseEntity<?> createUser (@Valid @RequestBody User userData) throws UniqueConstraintViolation {
         User newUser = userService.createUser(userData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
             public User user = newUser;
@@ -49,7 +50,8 @@ public class UserController {
 
     @PutMapping("/{user_id}")
     @Secured("ROLE_ADMIN")
-    public ResponseEntity<?> editUser (@PathVariable Long user_id, @Valid @RequestBody User userData) throws UserNotFound {
+    // На изменении пользователя мы убрали @Valid, т.к. можно изменить только некоторые поля, которые контролируются userService, а про поля name, password и т.д. можно не париться - они нам не нужны
+    public ResponseEntity<?> editUser (@PathVariable Long user_id, @RequestBody User userData) throws UserNotFound {
         User updatedUser = userService.updateUser(user_id, userData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result () {
             public User user = updatedUser;

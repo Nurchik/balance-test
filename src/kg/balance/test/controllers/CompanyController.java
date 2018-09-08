@@ -3,6 +3,7 @@ package kg.balance.test.controllers;
 import kg.balance.test.dto.BaseResponse;
 import kg.balance.test.dto.Result;
 import kg.balance.test.exceptions.CompanyNotFound;
+import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.models.Company;
 import kg.balance.test.services.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ public class CompanyController {
 
     @PostMapping("/")
     @Secured({"ROLE_ADMIN"})
-    public ResponseEntity<?> createCompany (@Valid @RequestBody Company companyData) {
+    public ResponseEntity<?> createCompany (@Valid @RequestBody Company companyData) throws UniqueConstraintViolation {
         Company newCompany = companyService.createCompany(companyData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result () {
             public Company company = newCompany;
@@ -49,7 +50,8 @@ public class CompanyController {
 
     @PutMapping("/{company_id}")
     @Secured({"ROLE_ADMIN"})
-    public ResponseEntity<?> editCompany (@PathVariable Long company_id, @Valid @RequestBody Company companyData) throws CompanyNotFound {
+    // Здесь, также, не нужна аннотация @Valid. Мы сами отберем нужные поля в companyService для дальнейшей обработки
+    public ResponseEntity<?> editCompany (@PathVariable Long company_id, @RequestBody Company companyData) throws CompanyNotFound, UniqueConstraintViolation {
         Company updatedCompany = companyService.updateCompany(company_id, companyData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result () {
             public Company company = updatedCompany;

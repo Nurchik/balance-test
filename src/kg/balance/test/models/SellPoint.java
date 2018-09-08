@@ -1,11 +1,11 @@
 package kg.balance.test.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Table(name = "sellpoint", schema = "public")
@@ -17,16 +17,15 @@ public class SellPoint {
     private Long id;
 
     @Column
+    @NotBlank
     private String name;
 
-    @JsonProperty("company_id")
+    @JsonIgnore
     @Transient
-    @NotBlank
     private Long companyId;
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "company_id", foreignKey = @ForeignKey(name = "COMPANY_ID_FK"))
     private Company company;
 
     @JsonProperty("phone_number")
@@ -42,14 +41,12 @@ public class SellPoint {
     @Column
     private float longitude;
 
-    @JsonProperty("user_id")
+    @JsonIgnore
     @Transient
-    @NotBlank
     private Long userId;
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "user_id", foreignKey = @ForeignKey(name = "USER_ID_FK"))
     private User user;
 
     @PostLoad
@@ -59,6 +56,7 @@ public class SellPoint {
     }
 
     @JsonProperty("id")
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Long getId() {
         return id;
     }
@@ -78,12 +76,22 @@ public class SellPoint {
     // Здесь мы запрашиваем id Company, чтобы при получении объекта из БД, временная перемененная получила id company, которая будет отдаваться в JSON-виде
     public Long getCompanyId() { return companyId; }
 
+    @JsonSetter("company")
+    @NotBlank
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
     }
 
     public Company getCompany() {
         return company;
+    }
+
+    @JsonGetter("company")
+    public Map<String, String> getTrimmedCompanyData () {
+        Map<String, String> companyData = new HashMap<>();
+        companyData.put("id", getCompany().getId().toString());
+        companyData.put("name", getCompany().getName());
+        return companyData;
     }
 
     public void setCompany(Company company) {
@@ -126,6 +134,7 @@ public class SellPoint {
         return userId;
     }
 
+    @JsonSetter("user")
     public void setUserId(Long userId) {
         this.userId = userId;
     }
@@ -136,5 +145,13 @@ public class SellPoint {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    @JsonGetter("user")
+    public Map<String, String> getTrimmedUserData () {
+        Map<String, String> userData = new HashMap<>();
+        userData.put("id", getUser().getId().toString());
+        userData.put("name", getUser().getName());
+        return userData;
     }
 }

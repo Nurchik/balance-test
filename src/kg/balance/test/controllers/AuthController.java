@@ -47,7 +47,7 @@ public class AuthController {
             return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
                 @JsonProperty("auth_token")
                 public String authToken = jwtToken;
-                @JsonProperty("user_data")
+                @JsonProperty("user")
                 public User userData = user;
             }));
         } catch (AuthenticationException ex) {

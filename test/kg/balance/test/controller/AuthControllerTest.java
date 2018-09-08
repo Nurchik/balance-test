@@ -79,8 +79,8 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.errorCode", is("ok")))
                 .andExpect(jsonPath("$.errorText", nullValue()))
                 .andExpect(jsonPath("$.result.auth_token", notNullValue(String.class)))
-                .andExpect(jsonPath("$.result.user_data.name", is("balance_admin")))
-                .andExpect(jsonPath("$.result.user_data.is_admin", is(true)));
+                .andExpect(jsonPath("$.result.user.name", is("balance_admin")))
+                .andExpect(jsonPath("$.result.user.is_admin", is(true)));
     }
 
     @Test
@@ -92,8 +92,8 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.errorCode", is("ok")))
                 .andExpect(jsonPath("$.errorText", nullValue()))
                 .andExpect(jsonPath("$.result.auth_token", notNullValue(String.class)))
-                .andExpect(jsonPath("$.result.user_data.name", is("balance_user")))
-                .andExpect(jsonPath("$.result.user_data.is_admin", is(false)));
+                .andExpect(jsonPath("$.result.user.name", is("balance_user")))
+                .andExpect(jsonPath("$.result.user.is_admin", is(false)));
     }
 
     @Test

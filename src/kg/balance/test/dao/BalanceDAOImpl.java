@@ -42,17 +42,20 @@ public class BalanceDAOImpl<T> implements BalanceDAO<T> {
     public T add(T entity) {
         Session session = sessionFactory.getCurrentSession();
         session.persist(entity);
+        session.flush();
         return entity;
     }
 
     public void update(T entity) {
         Session session = sessionFactory.getCurrentSession();
         session.merge(entity);
+        session.flush();
     }
 
     public void delete(T entity) {
         Session session = sessionFactory.getCurrentSession();
         session.persist(entity);// на всякий случай, переводим в persisted state.
         session.delete(entity);
+        session.flush();
     }
 }
