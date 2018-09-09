@@ -3,6 +3,7 @@ package kg.balance.test.services;
 import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 public interface SellPointService {
     public SellPoint getSellPoint (Long id) throws SellPointNotFound;
     public List<SellPoint> getSellPoints (Long userId, Long companyId);
-    public SellPoint createSellPoint (SellPoint sellPoint) throws UserNotFound, CompanyNotFound;
-    public SellPoint updateSellPoint (Boolean isAdmin, SellPoint sellPoint) throws UserNotFound, SellPointNotFound;
-    public void deleteSellPoint (Long userId, Long id) throws AccessDeniedException, UserNotFound, SellPointNotFound;
+    public SellPoint createSellPoint (User currentUser, SellPoint sellPoint) throws UserNotFound, CompanyNotFound;
+    public SellPoint updateSellPoint (User user, Long sellPointId, SellPoint sellPoint) throws UserNotFound, SellPointNotFound;
+    public void deleteSellPoint (Long userId, Long id) throws AccessDeniedException, UserNotFound, SellPointNotFound, CompanyNotFound;
 }
 

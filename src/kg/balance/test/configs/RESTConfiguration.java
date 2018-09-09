@@ -45,6 +45,9 @@ public class RESTConfiguration implements WebMvcConfigurer {
         Properties props = new Properties();
         props.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         props.put("hibernate.hbm2ddl.auto", "update");
+        //props.put("hibernate.show_sql", "true");
+        //props.put("hibernate.format_sql", "true");
+
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(dataSource);
         sessionFactory.setPackagesToScan("kg.balance.test.models");

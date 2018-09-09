@@ -30,6 +30,12 @@ public class SellPointServiceImpl implements SellPointService {
     private BalanceDAOImpl<Company> companyRepository;
 
     @Autowired
+    private UserService userService;
+
+    @Autowired
+    CompanyService companyService;
+
+    @Autowired
     public void setUserRepository(BalanceDAOImpl<User> userRepository) {
         this.userRepository = userRepository;
         userRepository.setEntityClass(User.class);
@@ -72,34 +78,55 @@ public class SellPointServiceImpl implements SellPointService {
     }
 
     @Transactional
-    public SellPoint createSellPoint(SellPoint sellPoint) throws UserNotFound, CompanyNotFound {
-        User user = userRepository.get(sellPoint.getUserId()).orElseThrow(UserNotFound::new);
+    public SellPoint createSellPoint(User currentUser, SellPoint sellPoint) throws UserNotFound, CompanyNotFound {
+        // Если точка создается от имени администратора, и задан пользователь для которого она создается
+        User owner;
+        if (currentUser.getIsAdmin() && sellPoint.getUserId() != null) {
+            User user = userRepository.get(sellPoint.getUserId()).orElseThrow(UserNotFound::new);
+            owner = user;
+        } else { // точка будет создаваться от имени пользователя (переданного в JWT Token)
+            owner = currentUser;
+        }
         Company company = companyRepository.get(sellPoint.getCompanyId()).orElseThrow(CompanyNotFound::new);
-        sellPoint.setUser(user);
+        sellPoint.setUser(owner);
         sellPoint.setCompany(company);
         sellPointRepository.add(sellPoint);
         return sellPoint;
     }
 
     @Transactional
-    public SellPoint updateSellPoint(Boolean isAdmin, SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
-        SellPoint sellPoint = sellPointRepository.get(sellPointData.getId()).orElseThrow(SellPointNotFound::new);
-        sellPoint.setName(sellPointData.getName());
-        sellPoint.setPhoneNumber(sellPointData.getPhoneNumber());
-        sellPoint.setAddress(sellPointData.getAddress());
-        sellPoint.setLatitude(sellPointData.getLatitude());
-        sellPoint.setLongitude(sellPointData.getLongitude());
+    public SellPoint updateSellPoint(User user, Long sellPointId, SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
+        SellPoint sellPoint = sellPointRepository.get(sellPointId).orElseThrow(SellPointNotFound::new);
+        if (!user.getIsAdmin() && !sellPoint.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("Cannot update foreign sell point");
+        }
+        if (sellPointData.getName() != null) {
+            sellPoint.setName(sellPointData.getName());
+        }
+        if (sellPointData.getPhoneNumber() != null) {
+            sellPoint.setPhoneNumber(sellPointData.getPhoneNumber());
+        }
+        if (sellPointData.getAddress() != null) {
+            sellPoint.setAddress(sellPointData.getAddress());
+        }
+        if (sellPointData.getLatitude() != null) {
+            sellPoint.setLatitude(sellPointData.getLatitude());
+        }
+        if (sellPointData.getLongitude() != null) {
+            sellPoint.setLongitude(sellPointData.getLongitude());
+        }
         // Только админ может менять владельца точки
         if (user.getIsAdmin() && sellPointData.getUserId() != null) {
             User newUser = userRepository.get(sellPointData.getUserId()).orElseThrow(UserNotFound::new);
             sellPoint.setUser(newUser);
         }
+
         sellPointRepository.update(sellPoint);
         return sellPoint;
     }
 
     @Transactional
-    public void deleteSellPoint(Long userId, Long id) throws AccessDeniedException, UserNotFound, SellPointNotFound {
+    public void deleteSellPoint(Long userId, Long id) throws AccessDeniedException, UserNotFound, SellPointNotFound, CompanyNotFound {
         SellPoint sellPoint = sellPointRepository.get(id).orElseThrow(SellPointNotFound::new);
         User user = userRepository.get(userId).orElseThrow(UserNotFound::new);
         // Только владелец точки может удалять свою точку. А админ может все!!

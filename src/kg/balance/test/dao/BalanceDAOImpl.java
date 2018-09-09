@@ -26,7 +26,10 @@ public class BalanceDAOImpl<T> implements BalanceDAO<T> {
 
     public Optional<T> get(Long id) {
         Session session = sessionFactory.getCurrentSession();
-        return Optional.<T>ofNullable(session.get(entityClass, id));
+        T entity = session.get(entityClass, id);
+        // Переводим сущность в состояние detached, чтобы при изменении данных, было необходимо делать merge (explicit merge and session flush)
+        //session.evict(entity);
+        return Optional.<T>ofNullable(entity);
     }
 
     public Optional<T> getByName(String name) {
@@ -55,7 +58,7 @@ public class BalanceDAOImpl<T> implements BalanceDAO<T> {
     public void delete(T entity) {
         Session session = sessionFactory.getCurrentSession();
         session.persist(entity);// на всякий случай, переводим в persisted state.
-        session.delete(entity);
+        session.remove(entity);
         session.flush();
     }
 }

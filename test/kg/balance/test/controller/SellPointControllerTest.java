@@ -10,6 +10,7 @@ import kg.balance.test.models.User;
 import kg.balance.test.services.CompanyService;
 import kg.balance.test.services.SellPointService;
 import kg.balance.test.services.UserService;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,21 +22,21 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import javax.servlet.Filter;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -87,7 +88,7 @@ public class SellPointControllerTest {
     @Qualifier("springSecurityFilterChain")
     private Filter springSecurityFilterChain;
 
-    @BeforeClass
+    @Before
     public void setup() throws Exception {
         mockMVC = MockMvcBuilders
                 .webAppContextSetup(this.wac)
@@ -150,6 +151,12 @@ public class SellPointControllerTest {
         fifthSellPoint.setCompanyId(firstCompany.getId());
         fifthSellPoint.setName("FifthSPName");
         fifthSellPoint.setPhoneNumber("+996123456005");
+
+        this.firstSellPoint = sellPointService.createSellPoint(adminUser, firstSellPoint);
+        this.secondSellPoint = sellPointService.createSellPoint(adminUser, secondSellPoint);
+        this.thirdSellPoint = sellPointService.createSellPoint(adminUser, thirdSellPoint);
+        this.fourthSellPoint = sellPointService.createSellPoint(adminUser, fourthSellPoint);
+        this.fifthSellPoint = sellPointService.createSellPoint(adminUser, fifthSellPoint);
 
 
         MvcResult res = mockMVC.perform(post("/auth/signin/")
@@ -229,24 +236,128 @@ public class SellPointControllerTest {
         assertThat(firstSPData.get("name"), is("FirstSPName"));
         assertThat(firstSPData.get("id"), is(firstSellPoint.getId().toString()));
         assertThat(secondSPData.get("name"), is("SecondSPName"));
+        assertThat(secondSPData.get("id"), is(secondSellPoint.getId().toString()));
+    }
 
     @Test
-    public void testGetSellPointsByAdminByCompanyId() throws Exception {}
+    public void testGetSellPointsByAdminByCompanyId() throws Exception {
+        MvcResult result = mockMVC.perform(get("/sellpoints/?company_id=" + secondCompany.getId().toString())
+                .header("Authorization", "Bearer " + adminAuthToken)
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+        int sellpoints_count = json.read("$.result.sellpoints.length()");
+        int first_sp_idx = sellpoints_count - 2;
+        int second_sp_idx = sellpoints_count - 1;
+
+        Map<String, Object> firstSPData = json.read(String.format("$.result.sellpoints[%d]", first_sp_idx));
+        Map<String, Object> secondSPData = json.read(String.format("$.result.sellpoints[%d]", second_sp_idx));
+
+        assertThat(sellpoints_count, greaterThanOrEqualTo(2));
+        assertThat(firstSPData.get("id"), is(secondSellPoint.getId().toString()));
+        assertThat(secondSPData.get("id"), is(thirdSellPoint.getId().toString()));
+    }
 
     @Test
-    public void testGetSellPointsByUserByCompanyId() throws Exception {}
+    public void testGetSellPointsByUserByCompanyId() throws Exception {
+        MvcResult result = mockMVC.perform(get("/sellpoints/?company_id=" + secondCompany.getId().toString())
+                .header("Authorization", "Bearer " + userAuthToken)
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+        int sellpoints_count = json.read("$.result.sellpoints.length()");
+        int first_sp_idx = sellpoints_count - 1;
+
+        Map<String, Object> firstSPData = json.read(String.format("$.result.sellpoints[%d]", first_sp_idx));
+
+        assertThat(sellpoints_count, greaterThanOrEqualTo(1));
+        assertThat(firstSPData.get("id"), is(secondSellPoint.getId().toString()));
+    }
 
     @Test
-    public void testGetSellPointByIdByAdmin() throws Exception {}
+    @SuppressWarnings("unchecked")
+    public void testGetSellPointByIdByAdmin() throws Exception {
+        MvcResult result = mockMVC.perform(get(String.format("/sellpoints/%s", fifthSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + adminAuthToken)
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("id"), is(fifthSellPoint.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(firstCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("name"), is(firstCompany.getName()));
+        assertThat(((Map<String, String>) sellPointData.get("company")).keySet(), hasSize(2));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(adminUser.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("name"), is(adminUser.getName()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).keySet(), hasSize(2));
+        assertThat(sellPointData.keySet().containsAll(Arrays.asList("id", "name", "phone_number", "address", "latitude", "longitude", "user", "company")), is(true));
+    }
 
     @Test
-    public void testGetSellPointByIdByUserNotOwner() throws Exception {}
+    public void testGetSellPointByIdByUserNotOwner() throws Exception {
+        mockMVC.perform(get(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + user2AuthToken)
+        ).andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("access_denied")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testGetSellPointByIdNotFound() throws Exception {}
+    public void testGetSellPointByIdNotFound() throws Exception {
+        mockMVC.perform(get(String.format("/sellpoints/%s", "99999999999"))
+                .header("Authorization", "Bearer " + user2AuthToken)
+        ).andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("sellpoint_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testCreateSellPoint() throws Exception {}
+    public void testCreateSellPoint() throws Exception {
+        MvcResult result = mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"id\": \"123\",\"name\": \"first sellpoint\",\"company\": \"%s\"," +
+                        "\"phone_number\": \"+996770000001\",\"address\": \"test address\"," +
+                        "\"latitude\": \"45.7654\",\"user\": \"%s\"}", secondCompany.getId().toString(), regularUser.getId().toString()))
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("id"), not(equalTo("123")));
+        assertThat(sellPointData.get("name"), is("first sellpoint"));
+        assertThat(sellPointData.get("phone_number"), is("+996770000001"));
+        assertThat(sellPointData.get("address"), is("test address"));
+        assertThat(sellPointData.get("latitude"), is(45.7654));
+        assertThat(sellPointData.get("longitude"), nullValue());
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(secondCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("name"), is(secondCompany.getName()));
+        assertThat(((Map<String, String>) sellPointData.get("company")).keySet(), hasSize(2));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("name"), is(regularUser.getName()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).keySet(), hasSize(2));
+        assertThat(sellPointData.keySet().containsAll(Arrays.asList("id", "name", "phone_number", "address", "latitude", "longitude", "user", "company")), is(true));
+    }
 
     @Test
     public void testCreateSellPointNoRequiredFields() throws Exception {
@@ -264,43 +375,235 @@ public class SellPointControllerTest {
     }
 
     @Test
-    public void testCreateSellPointNotFoundCompany() throws Exception {}
+    public void testCreateSellPointNotFoundCompany() throws Exception {
+        mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"id\": \"123\",\"name\": \"second sellpoint\", \"company\": \"999999999\"," +
+                        "\"phone_number\": \"+996770000001\",\"address\": \"test address\"," +
+                        "\"latitude\": \"45.7654\",\"user\": \"%s\"}", regularUser.getId().toString()))
+        ).andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("company_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testCreateSellPointByAdminSetUserId() throws Exception {}
+    public void testCreateSellPointNotFoundUser() throws Exception {
+        mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"id\": \"123\",\"name\": \"second sellpoint\", \"company\": \"%s\"," +
+                        "\"phone_number\": \"+996770000001\",\"address\": \"test address\"," +
+                        "\"latitude\": \"45.7654\",\"user\": \"999999999\"}", secondCompany.getId().toString()))
+        ).andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("user_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testCreateSellPointByAdminSetUserIdNotFoundUser() throws Exception {}
+    public void testCreateSellPointByUserSetUserId() throws Exception {
+        MvcResult result = mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + userAuthToken)
+                .content(String.format("{\"id\": \"123\",\"name\": \"first sellpoint\",\"company\": \"%s\"," +
+                        "\"phone_number\": \"+996770000002\",\"address\": \"test address\"," +
+                        "\"user\": \"%s\"}", firstCompany.getId().toString(), regularUser2.getId().toString()))
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("id"), not(equalTo("123")));
+        assertThat(sellPointData.get("phone_number"), is("+996770000002"));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(firstCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser.getId().toString()));
+    }
 
     @Test
-    public void testCreateSellPointByUserSetUserId() throws Exception {}
+    public void testCreateSellPointByAdminWithoutUserId() throws Exception {
+        MvcResult result = mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"name\": \"first sellpoint\",\"company\": \"%s\"," +
+                        "\"phone_number\": \"+996770000003\"}", firstCompany.getId().toString()))
+        ).andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("phone_number"), is("+996770000003"));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(firstCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(adminUser.getId().toString()));
+    }
 
     @Test
-    public void testCreateSellPointByAdminWithoutUserId() throws Exception {}
+    public void testCreateSellPointByUserWithoutUserId() throws Exception {
+        MvcResult result = mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + user2AuthToken)
+                .content(String.format("{\"name\": \"second sellpoint\",\"company\": \"%s\"," +
+                        "\"phone_number\": \"+996770000004\"}", secondCompany.getId().toString()))
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("phone_number"), is("+996770000004"));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(secondCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser2.getId().toString()));
+    }
 
     @Test
-    public void testCreateSellPointByUserWithoutUserId() throws Exception {}
+    public void testUpdateSellPointByAdmin() throws Exception {
+        MvcResult result = mockMVC.perform(put(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"id\": \"99999999\",\"name\": \"first updated sellpoint\",\"company\": \"%s\"," +
+                        "\"user\": \"%s\", \"longitude\": \"67.0345\"}", secondCompany.getId().toString(), regularUser2.getId().toString()))
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("id"), not(equalTo("99999999")));
+        assertThat(sellPointData.get("name"), is("first updated sellpoint"));
+        assertThat(sellPointData.get("phone_number"), is("+996123456001"));
+        assertThat(sellPointData.get("address"), nullValue());
+        assertThat(sellPointData.get("latitude"), nullValue());
+        assertThat(sellPointData.get("longitude"), is(67.0345));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(firstCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser2.getId().toString()));
+    }
 
     @Test
-    public void testUpdateSellPointByIdNotFound() throws Exception {}
+    public void testUpdateSellPointByIdNotFound() throws Exception {
+        MvcResult result = mockMVC.perform(put(String.format("/sellpoints/%s", "999999999"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + user2AuthToken)
+                .content(String.format("{\"id\": \"999999999\",\"name\": \"first updated sellpoint\",\"company\": \"%s\"," +
+                        "\"user\": \"%s\", \"longitude\": \"67.0345\"}", secondCompany.getId().toString(), regularUser2.getId().toString()))
+        ).andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("sellpoint_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()))
+                .andReturn();
+    }
 
     @Test
-    public void testUpdateSellPointByIdByUserNotOwner() throws Exception {}
+    public void testUpdateSellPointByUserNotOwner() throws Exception {
+        mockMVC.perform(put(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + user2AuthToken)
+                .content(String.format("{\"id\": \"999999999\",\"name\": \"first updated sellpoint\",\"company\": \"%s\"," +
+                        "\"user\": \"%s\", \"longitude\": \"67.0345\"}", secondCompany.getId().toString(), regularUser2.getId().toString()))
+        ).andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("access_denied")))
+                .andExpect(jsonPath("$.errorText", is("Cannot update foreign sell point")))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testUpdateSellPointByIdByUser() throws Exception {}
+    public void testUpdateSellPointByUser() throws Exception {
+        MvcResult result = mockMVC.perform(put(String.format("/sellpoints/%s", secondSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + userAuthToken)
+                .content(String.format("{\"address\": \"some address\",\"user\": \"%s\"}", regularUser2.getId().toString()))
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("name"), is("SecondSPName"));
+        assertThat(sellPointData.get("address"), is("some address"));
+        assertThat(((Map<String, String>) sellPointData.get("company")).get("id"), is(secondCompany.getId().toString()));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser.getId().toString()));
+    }
 
     @Test
-    public void testUpdateSellPointByIdByAdmin() throws Exception {}
+    public void testUpdateSellPointByUserNotSetUser() throws Exception {
+        MvcResult result = mockMVC.perform(put(String.format("/sellpoints/%s", secondSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + userAuthToken)
+                .content("{\"address\": \"some address 123\"}")
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("name"), is("SecondSPName"));
+        assertThat(sellPointData.get("address"), is("some address 123"));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser.getId().toString()));
+    }
 
     @Test
-    public void testUpdateSellPointByIdByAdminSetUserId() throws Exception {}
+    public void testUpdateSellPointByAdminNotSetUser() throws Exception {
+        MvcResult result = mockMVC.perform(put(String.format("/sellpoints/%s", thirdSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content("{\"address\": \"some address, 123\"}")
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andReturn();
+        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
+
+        Map<String, Object> sellPointData = json.read("$.result.sellpoint");
+        assertThat(sellPointData.get("name"), is("ThirdSPName"));
+        assertThat(sellPointData.get("address"), is("some address, 123"));
+        assertThat(((Map<String, String>) sellPointData.get("user")).get("id"), is(regularUser2.getId().toString()));
+    }
 
     @Test
-    public void testUpdateSellPointByIdByAdminSetUserIdNotFoundUser() throws Exception {}
+    public void testUpdateSellPointByIdByAdminSetUserIdNotFoundUser() throws Exception {
+        mockMVC.perform(put(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"name\": \"updated sellpoint\", \"user\": \"%s\"}", "99999999"))
+        ).andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("user_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testDeleteSellPointByAdmin() throws Exception {}
+    public void testDeleteSellPointByAdmin() throws Exception {
+        mockMVC.perform(delete(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + adminAuthToken)
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andExpect(jsonPath("$.result", nullValue()));
 
         mockMVC.perform(get(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
                 .header("Authorization", "Bearer " + adminAuthToken)
@@ -312,12 +615,35 @@ public class SellPointControllerTest {
     }
 
     @Test
-    public void testDeleteSellPointByAdminNotFound() throws Exception {}
+    public void testDeleteSellPointByAdminNotFound() throws Exception {
+        mockMVC.perform(delete(String.format("/sellpoints/%s", "99999999"))
+                .header("Authorization", "Bearer " + adminAuthToken)
+        ).andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("sellpoint_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testDeleteSellPointByUser() throws Exception {}
+    public void testDeleteSellPointByUser() throws Exception {
+        mockMVC.perform(delete(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + userAuthToken)
+        ).andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("ok")))
+                .andExpect(jsonPath("$.errorText", nullValue()))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
-    public void testDeleteSellPointByUserNotOwner() throws Exception {}
-
+    public void testDeleteSellPointByUserNotOwner() throws Exception {
+        mockMVC.perform(delete(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + user2AuthToken)
+        ).andExpect(status().isForbidden())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("access_denied")))
+                .andExpect(jsonPath("$.errorText", is("Cannot delete foreign sell point")))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 }

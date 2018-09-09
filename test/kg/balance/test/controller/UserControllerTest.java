@@ -5,7 +5,11 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import kg.balance.test.configs.RESTConfiguration;
 import kg.balance.test.configs.SecurityConfiguration;
+import kg.balance.test.models.Company;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
+import kg.balance.test.services.CompanyService;
+import kg.balance.test.services.SellPointService;
 import kg.balance.test.services.UserService;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -49,7 +53,13 @@ public class UserControllerTest {
     private WebApplicationContext wac;
 
     @Autowired
+    CompanyService companyService;
+
+    @Autowired
     UserService userService;
+
+    @Autowired
+    SellPointService sellPointService;
 
     private MockMvc mockMVC;
 
@@ -58,6 +68,13 @@ public class UserControllerTest {
 
     private Long adminId;
     private Long userId;
+
+    private Company firstCompany;
+    private Company secondCompany;
+
+    private SellPoint firstSellPoint;
+    private SellPoint secondSellPoint;
+    private SellPoint thirdSellPoint;
 
 
     @Autowired
@@ -82,9 +99,41 @@ public class UserControllerTest {
         user_reg.setPassword("Balance@User");
         userService.createUser(user_reg);
 
+        Company company = new Company();
+        company.setName("TestCompany");
+        company.setWebsite("https://test.kg/");
+
+        Company company2 = new Company();
+        company2.setName("AnotherTestCompany");
+
+        firstCompany = companyService.createCompany(company);
+        secondCompany = companyService.createCompany(company2);
+
+        SellPoint firstSellPoint = new SellPoint();
+        firstSellPoint.setUserId(user.getId());
+        firstSellPoint.setCompanyId(firstCompany.getId());
+        firstSellPoint.setName("FirstSPName");
+        firstSellPoint.setPhoneNumber("+996123456001");
+
+        SellPoint secondSellPoint = new SellPoint();
+        secondSellPoint.setUserId(user_reg.getId());
+        secondSellPoint.setCompanyId(secondCompany.getId());
+        secondSellPoint.setName("SecondSPName");
+        secondSellPoint.setPhoneNumber("+996123456002");
+
+        SellPoint thirdSellPoint = new SellPoint();
+        thirdSellPoint.setUserId(user_reg.getId());
+        thirdSellPoint.setCompanyId(secondCompany.getId());
+        thirdSellPoint.setName("ThirdSPName");
+        thirdSellPoint.setPhoneNumber("+996123456003");
+
+        this.firstSellPoint = sellPointService.createSellPoint(user, firstSellPoint);
+        this.secondSellPoint = sellPointService.createSellPoint(user, secondSellPoint);
+        this.thirdSellPoint = sellPointService.createSellPoint(user, thirdSellPoint);
+
         MvcResult res = mockMVC.perform(post("/auth/signin/")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"username\": \"balance_admin\", \"password\":\"Balance@Admin\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\": \"balance_admin\", \"password\":\"Balance@Admin\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
         adminAuthToken = JsonPath.read(res.getResponse().getContentAsString(), "$.result.auth_token");

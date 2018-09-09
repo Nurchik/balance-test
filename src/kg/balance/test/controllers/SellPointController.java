@@ -6,6 +6,7 @@ import kg.balance.test.dto.Result;
 import kg.balance.test.exceptions.CompanyNotFound;
 import kg.balance.test.exceptions.SellPointNotFound;
 import kg.balance.test.exceptions.UserNotFound;
+import kg.balance.test.models.User;
 import kg.balance.test.security.UserPrincipal;
 import kg.balance.test.services.SellPointService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class SellPointController {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         SellPoint sellPointData = sellPointService.getSellPoint(sellpoint_id);
         // Если данная точка продаж не принадлежит данному пользователю, то ничего не показываем
-        if (up.getUser().getId().equals(sellPointData.getUserId())) {
+        if (!up.getUser().getId().equals(sellPointData.getUserId())) {
             throw new AccessDeniedException("Cannot access to foreign sell point");
         }
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
@@ -62,11 +63,8 @@ public class SellPointController {
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public ResponseEntity<?> createSellPoint (@Valid @RequestBody SellPoint sellPointData) throws UserNotFound, CompanyNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        // Администратор может задавать любого владельца (userId). Если данный пользователь не администратор, то он является владельцем новой точки
-        if (!up.getUser().getIsAdmin()) {
-            sellPointData.setUserId(up.getUser().getId());
-        }
-        SellPoint newSellPoint = sellPointService.createSellPoint(sellPointData);
+        User currentUser = up.getUser();
+        SellPoint newSellPoint = sellPointService.createSellPoint(currentUser, sellPointData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
             @JsonProperty("sellpoint")
             public SellPoint sellPoint = newSellPoint;
@@ -77,7 +75,7 @@ public class SellPointController {
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
     public ResponseEntity<?> editSellPoint (@PathVariable Long sellpoint_id, @RequestBody SellPoint sellPointData) throws UserNotFound, SellPointNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        SellPoint updatedSellPoint = sellPointService.updateSellPoint(up.getUser().getIsAdmin(), sellPointData);
+        SellPoint updatedSellPoint = sellPointService.updateSellPoint(up.getUser(), sellpoint_id, sellPointData);
         return ResponseEntity.ok(new BaseResponse("ok", null, new Result() {
             @JsonProperty("sellpoint")
             public SellPoint sellPoint = updatedSellPoint;
@@ -86,7 +84,7 @@ public class SellPointController {
 
     @DeleteMapping("/{sellpoint_id}")
     @Secured({"ROLE_USER", "ROLE_ADMIN"})
-    public ResponseEntity<?> deleteSellPoint (@PathVariable Long sellpoint_id) throws AccessDeniedException, UserNotFound, SellPointNotFound {
+    public ResponseEntity<?> deleteSellPoint (@PathVariable Long sellpoint_id) throws AccessDeniedException, UserNotFound, SellPointNotFound, CompanyNotFound {
         UserPrincipal up = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         sellPointService.deleteSellPoint(up.getUser().getId(), sellpoint_id);
         return ResponseEntity.ok(new BaseResponse("ok", null));

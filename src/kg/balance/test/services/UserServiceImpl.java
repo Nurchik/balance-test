@@ -6,6 +6,7 @@ import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.dao.BalanceDAOImpl;
 import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,10 +83,10 @@ public class UserServiceImpl implements UserService {
             user.setIsAdmin(userData.getIsAdmin());
         }
         /*
-        *  Здесь мы вызываем метод update для persisted-сущности user, хотя наши изменения будут внесены в БД, когда завершится @Transactional метод
-        *  Но, т.к. во время тестов у нас есть @Transactional-аннотированный тестовый метод, то Транзакция данного метода будет выполняться в рамках транзакции Тестового метода (из-за propagation=REQUIRED), и мы не сможем в тестовом методе получать изменения сразу после завершения этого метода
-        *  userRepository.update пытается сделать merge persisted-сущности (что ничего не меняет) и, самое главное, делает flush сессии
-        * */
+         *  Здесь мы вызываем метод update для persisted-сущности user, хотя наши изменения будут внесены в БД, когда завершится @Transactional метод
+         *  Но, т.к. во время тестов у нас есть @Transactional-аннотированный тестовый метод, то Транзакция данного метода будет выполняться в рамках транзакции Тестового метода (из-за propagation=REQUIRED), и мы не сможем в тестовом методе получать изменения сразу после завершения этого метода
+         *  userRepository.update пытается сделать merge persisted-сущности (что ничего не меняет) и, самое главное, делает flush сессии
+         * */
         userRepository.update(user);
         return user;
     }
