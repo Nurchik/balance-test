@@ -135,9 +135,9 @@ public class CompanyControllerTest {
 
         Map<String, Object> firstCompanyData = json.read(String.format("$.result.companies[%d]", first_company_idx));
         Map<String, Object> secondCompanyData = json.read(String.format("$.result.companies[%d]", second_company_idx));
-        assertThat(firstCompanyData.keySet().containsAll(Arrays.asList("name", "website", "sellpoints")), is(true));
-        assertThat(secondCompanyData.keySet().containsAll(Arrays.asList("name", "website", "sellpoints")), is(true));
-        assertThat(firstCompanyData.keySet(), hasSize(4));
+        assertThat(firstCompanyData.keySet().containsAll(Arrays.asList("id", "name", "website")), is(true));
+        assertThat(secondCompanyData.keySet().containsAll(Arrays.asList("id", "name", "website")), is(true));
+        assertThat(firstCompanyData.keySet(), hasSize(3));
     }
 
     @Test
@@ -179,7 +179,6 @@ public class CompanyControllerTest {
         assertThat(json.read("$.result.company.id"), not(equalTo("123")));
         assertThat(json.read("$.result.company.name"), is("MyCompany"));
         assertThat(json.read("$.result.company.website"), is("test.website"));
-        assertThat(json.read("$.result.company.sellpoints"), hasSize(0));
     }
 
     @Test
@@ -224,7 +223,6 @@ public class CompanyControllerTest {
         assertThat(json.read("$.result.company.id"), equalTo(firstCompany.getId().toString()));
         assertThat(json.read("$.result.company.name"), is("TestCompany2"));
         assertThat(json.read("$.result.company.website"), is("test.kg"));
-        assertThat(json.read("$.result.company.sellpoints"), hasSize(0));
     }
 
     @Test

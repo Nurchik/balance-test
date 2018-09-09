@@ -249,7 +249,19 @@ public class SellPointControllerTest {
     public void testCreateSellPoint() throws Exception {}
 
     @Test
-    public void testCreateSellPointNoRequiredFields() throws Exception {}
+    public void testCreateSellPointNoRequiredFields() throws Exception {
+        mockMVC.perform(post("/sellpoints/")
+                .contentType(MediaType.APPLICATION_JSON)
+                .header("Authorization", "Bearer " + adminAuthToken)
+                .content(String.format("{\"id\": \"123\",\"name\": \"second sellpoint\"," +
+                        "\"phone_number\": \"+996770000001\",\"address\": \"test address\"," +
+                        "\"latitude\": \"45.7654\",\"user\": \"%s\"}", regularUser.getId().toString()))
+        ).andDo(MockMvcResultHandlers.print()).andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("validation_error")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
     public void testCreateSellPointNotFoundCompany() throws Exception {}
@@ -289,6 +301,15 @@ public class SellPointControllerTest {
 
     @Test
     public void testDeleteSellPointByAdmin() throws Exception {}
+
+        mockMVC.perform(get(String.format("/sellpoints/%s", firstSellPoint.getId().toString()))
+                .header("Authorization", "Bearer " + adminAuthToken)
+        ).andDo(MockMvcResultHandlers.print()).andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(jsonPath("$.errorCode", is("sellpoint_not_found")))
+                .andExpect(jsonPath("$.errorText", notNullValue(String.class)))
+                .andExpect(jsonPath("$.result", nullValue()));
+    }
 
     @Test
     public void testDeleteSellPointByAdminNotFound() throws Exception {}

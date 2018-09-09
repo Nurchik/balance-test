@@ -29,10 +29,6 @@ public class Company {
     @Column
     private String website;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<SellPoint> sellPoints;
-
     @JsonProperty("id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Long getId() {
@@ -58,31 +54,5 @@ public class Company {
 
     public void setWebsite(String website) {
         this.website = website;
-    }
-
-    public List<SellPoint> getSellPoints() {
-        return sellPoints;
-    }
-
-    @JsonGetter("sellpoints")
-    public List<Map<String, String>> getSellPointsTrimmed () {
-        List<SellPoint> sellPoints = getSellPoints();
-        if (sellPoints == null) {
-            sellPoints = new ArrayList<>();
-        }
-        return sellPoints.stream()
-                .map(sellPoint -> {
-                    Map<String, String> sellPointData = new HashMap<String, String>();
-                    sellPointData.put("id", sellPoint.getId().toString());
-                    sellPointData.put("name", sellPoint.getName());
-                    sellPointData.put("company_id", sellPoint.getCompanyId().toString());
-                    return sellPointData;
-                })
-                .collect(Collectors.toList());
-    }
-
-    @JsonIgnore
-    public void setSellPoints(List<SellPoint> sellPoints) {
-        this.sellPoints = sellPoints;
     }
 }

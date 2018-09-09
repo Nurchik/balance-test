@@ -17,6 +17,6 @@ public class ServerInit extends AbstractAnnotationConfigDispatcherServletInitial
 
     @Override
     protected String[] getServletMappings () {
-        return new String[] { "/api/*" };
+        return new String[] { "/*" };
     }
 }

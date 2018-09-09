@@ -90,9 +90,9 @@ public class SellPointServiceImpl implements SellPointService {
         sellPoint.setLatitude(sellPointData.getLatitude());
         sellPoint.setLongitude(sellPointData.getLongitude());
         // Только админ может менять владельца точки
-        if (isAdmin) {
-            User user = userRepository.get(sellPointData.getUserId()).orElseThrow(UserNotFound::new);
-            sellPoint.setUser(user);
+        if (user.getIsAdmin() && sellPointData.getUserId() != null) {
+            User newUser = userRepository.get(sellPointData.getUserId()).orElseThrow(UserNotFound::new);
+            sellPoint.setUser(newUser);
         }
         sellPointRepository.update(sellPoint);
         return sellPoint;

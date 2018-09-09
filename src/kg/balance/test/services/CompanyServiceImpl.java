@@ -69,7 +69,7 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Transactional
-    public void deleteCompany(Long id) throws CompanyNotFound {
+    public void deleteCompany(User user, Long id) throws CodedException {
         Company company = companyRepository.get(id).orElseThrow(CompanyNotFound::new);
         companyRepository.delete(company);
     }

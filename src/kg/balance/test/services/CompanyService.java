@@ -14,5 +14,5 @@ public interface CompanyService {
 
     public Company updateCompany(Long companyId, Company companyData) throws CompanyNotFound, UniqueConstraintViolation;
 
-    public void deleteCompany(Long id) throws CompanyNotFound;
+    public void deleteCompany(User user, Long id) throws CodedException;
 }

@@ -20,5 +20,4 @@ public interface UserService {
     public User createUser (User user) throws UniqueConstraintViolation;
     public User updateUser (Long userId, User userData) throws UserNotFound;
     public void deleteUser (Long id) throws UserNotFound;
-
 }

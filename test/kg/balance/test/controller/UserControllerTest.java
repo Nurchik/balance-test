@@ -127,8 +127,8 @@ public class UserControllerTest {
         int user_idx = users_count - 1;
         Map<String, Object> adminData = json.read(String.format("$.result.users[%d]", admin_idx));
         Map<String, Object> userData = json.read(String.format("$.result.users[%d]", user_idx));
-        assertThat((String) adminData.get("name"), is("balance_admin"));
-        assertThat((String) userData.get("name"), is("balance_user"));
+        assertThat(adminData.get("name"), is("balance_admin"));
+        assertThat(userData.get("name"), is("balance_user"));
     }
 
     @Test
@@ -183,8 +183,7 @@ public class UserControllerTest {
         assertThat(userData.get("fullname"), is("Full Test Name"));
         assertThat(userData.get("phone_number"), nullValue());
         assertThat(userData.get("is_admin"), is(true));
-        assertThat((List<Object>) userData.get("sellpoints"), hasSize(0));
-        assertThat(userData.keySet(), hasSize(6));
+        assertThat(userData.keySet(), hasSize(5));
     }
 
     @Test
@@ -232,8 +231,7 @@ public class UserControllerTest {
         assertThat(userData.get("fullname"), is("Full Name"));
         assertThat(userData.get("phone_number"), is("996765475678"));
         assertThat(userData.get("is_admin"), is(true));
-        assertThat((List<Object>) userData.get("sellpoints"), hasSize(0));
-        assertThat(userData.keySet(), hasSize(6));
+        assertThat(userData.keySet(), hasSize(5));
 
         //Проверяем, не сменился ли пароль
         mockMVC.perform(post("/auth/signin/")

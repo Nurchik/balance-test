@@ -26,6 +26,7 @@ public class SellPoint {
 
     @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "company_id")
     private Company company;
 
     @JsonProperty("phone_number")
@@ -47,6 +48,7 @@ public class SellPoint {
 
     @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "user_id")
     private User user;
 
     @PostLoad
@@ -74,7 +76,13 @@ public class SellPoint {
         this.name = name;
     }
     // Здесь мы запрашиваем id Company, чтобы при получении объекта из БД, временная перемененная получила id company, которая будет отдаваться в JSON-виде
-    public Long getCompanyId() { return companyId; }
+    @NotNull
+    public Long getCompanyId() {
+        //if (companyId != null) {
+            return companyId;
+        //}
+        //return getCompany().getId();
+    }
 
     @JsonSetter("company")
     @NotBlank

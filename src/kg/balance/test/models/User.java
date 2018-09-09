@@ -41,10 +41,6 @@ public class User {
     @Column(name = "is_admin")
     private Boolean isAdmin;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<SellPoint> sellPoints;
-
     @JsonProperty("id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     public Long getId() {
@@ -98,32 +94,5 @@ public class User {
 
     public void setIsAdmin (Boolean isAdmin) {
         this.isAdmin = isAdmin;
-    }
-
-    @JsonIgnore
-    public List<SellPoint> getSellPoints() {
-        return sellPoints;
-    }
-
-    @JsonGetter("sellpoints")
-    public List<Map<String, String>> getSellPointsTrimmed () {
-        List<SellPoint> sellPoints = getSellPoints();
-        if (sellPoints == null) {
-            sellPoints = new ArrayList<>();
-        }
-        return sellPoints.stream()
-                .map(sellPoint -> {
-                    Map<String, String> sellPointData = new HashMap<String, String>();
-                    sellPointData.put("id", sellPoint.getId().toString());
-                    sellPointData.put("name", sellPoint.getName());
-                    sellPointData.put("company_id", sellPoint.getCompanyId().toString());
-                    return sellPointData;
-                })
-                .collect(Collectors.toList());
-    }
-
-    @JsonIgnore
-    public void setSellPoints(List<SellPoint> sellPoints) {
-        this.sellPoints = sellPoints;
     }
 }
