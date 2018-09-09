@@ -1,6 +1,7 @@
 package kg.balance.test.models;
 
 import com.fasterxml.jackson.annotation.*;
+import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
@@ -42,8 +43,9 @@ public class User {
     private Boolean isAdmin;
 
     @JsonIgnore
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<SellPoint> sellPoints;
+    @OneToMany(mappedBy = "user", orphanRemoval = true, fetch = FetchType.EAGER)
+    @Cascade({org.hibernate.annotations.CascadeType.ALL})
+    private List<SellPoint> sellPoints = new ArrayList<>();
 
     @JsonProperty("id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
@@ -116,7 +118,7 @@ public class User {
                     Map<String, String> sellPointData = new HashMap<String, String>();
                     sellPointData.put("id", sellPoint.getId().toString());
                     sellPointData.put("name", sellPoint.getName());
-                    sellPointData.put("company_id", sellPoint.getCompanyId().toString());
+                    //sellPointData.put("company", sellPoint.getCompanyId().toString());
                     return sellPointData;
                 })
                 .collect(Collectors.toList());

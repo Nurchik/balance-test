@@ -5,7 +5,11 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import kg.balance.test.configs.RESTConfiguration;
 import kg.balance.test.configs.SecurityConfiguration;
+import kg.balance.test.models.Company;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
+import kg.balance.test.services.CompanyService;
+import kg.balance.test.services.SellPointService;
 import kg.balance.test.services.UserService;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -49,7 +53,13 @@ public class UserControllerTest {
     private WebApplicationContext wac;
 
     @Autowired
+    CompanyService companyService;
+
+    @Autowired
     UserService userService;
+
+    @Autowired
+    SellPointService sellPointService;
 
     private MockMvc mockMVC;
 
@@ -58,6 +68,13 @@ public class UserControllerTest {
 
     private Long adminId;
     private Long userId;
+
+    private Company firstCompany;
+    private Company secondCompany;
+
+    private SellPoint firstSellPoint;
+    private SellPoint secondSellPoint;
+    private SellPoint thirdSellPoint;
 
 
     @Autowired
@@ -81,6 +98,38 @@ public class UserControllerTest {
         user_reg.setName("balance_user");
         user_reg.setPassword("Balance@User");
         userService.createUser(user_reg);
+
+        Company company = new Company();
+        company.setName("TestCompany");
+        company.setWebsite("https://test.kg/");
+
+        Company company2 = new Company();
+        company2.setName("AnotherTestCompany");
+
+        firstCompany = companyService.createCompany(company);
+        secondCompany = companyService.createCompany(company2);
+
+        SellPoint firstSellPoint = new SellPoint();
+        firstSellPoint.setUserId(user.getId());
+        firstSellPoint.setCompanyId(firstCompany.getId());
+        firstSellPoint.setName("FirstSPName");
+        firstSellPoint.setPhoneNumber("+996123456001");
+
+        SellPoint secondSellPoint = new SellPoint();
+        secondSellPoint.setUserId(user_reg.getId());
+        secondSellPoint.setCompanyId(secondCompany.getId());
+        secondSellPoint.setName("SecondSPName");
+        secondSellPoint.setPhoneNumber("+996123456002");
+
+        SellPoint thirdSellPoint = new SellPoint();
+        thirdSellPoint.setUserId(user_reg.getId());
+        thirdSellPoint.setCompanyId(secondCompany.getId());
+        thirdSellPoint.setName("ThirdSPName");
+        thirdSellPoint.setPhoneNumber("+996123456003");
+
+        this.firstSellPoint = sellPointService.createSellPoint(user, firstSellPoint);
+        this.secondSellPoint = sellPointService.createSellPoint(user, secondSellPoint);
+        this.thirdSellPoint = sellPointService.createSellPoint(user, thirdSellPoint);
 
         MvcResult res = mockMVC.perform(post("/auth/signin/")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -127,8 +176,10 @@ public class UserControllerTest {
         int user_idx = users_count - 1;
         Map<String, Object> adminData = json.read(String.format("$.result.users[%d]", admin_idx));
         Map<String, Object> userData = json.read(String.format("$.result.users[%d]", user_idx));
-        assertThat((String) adminData.get("name"), is("balance_admin"));
-        assertThat((String) userData.get("name"), is("balance_user"));
+        assertThat(adminData.get("name"), is("balance_admin"));
+        assertThat(userData.get("name"), is("balance_user"));
+        assertThat(jsonPath(String.format("$.result.users[%d].sellpoints.length()", admin_idx)), is(1));
+        assertThat(jsonPath(String.format("$.result.users[%d].sellpoints.length()", user_idx)), is(2));
     }
 
     @Test
@@ -141,6 +192,11 @@ public class UserControllerTest {
                 .andReturn();
         DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
         assertThat(json.read("$.result.user.name"), is("balance_admin"));
+        List<Map<String, String>> sellPoints = json.read("$.result.user.sellpoints");
+        assertThat(sellPoints, hasSize(1));
+        assertThat(sellPoints.get(0).get("id"), is(firstSellPoint.getId().toString()));
+        assertThat(sellPoints.get(0).get("name"), is(firstSellPoint.getName()));
+        assertThat(sellPoints.get(0).keySet(), hasSize(2));
     }
 
     @Test

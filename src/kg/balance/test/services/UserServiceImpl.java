@@ -6,6 +6,7 @@ import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.dao.BalanceDAOImpl;
 import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,6 +89,24 @@ public class UserServiceImpl implements UserService {
         * */
         userRepository.update(user);
         return user;
+    }
+
+    @Transactional
+    public void addSellPointToUser (Long userId, SellPoint sellPoint) throws UserNotFound {
+        User user = userRepository.get(userId).orElseThrow(UserNotFound::new);
+        user.getSellPoints().add(sellPoint);
+        try {
+            userRepository.update(user);
+        } catch (Exception ex) {
+            throw ex;
+        }
+    }
+
+    @Transactional
+    public void removeSellPointFromUser (Long userId, SellPoint sellPoint) throws UserNotFound {
+        User user = userRepository.get(userId).orElseThrow(UserNotFound::new);
+        user.getSellPoints().remove(sellPoint);
+        userRepository.update(user);
     }
 
     @Transactional

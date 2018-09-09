@@ -1,9 +1,12 @@
 package kg.balance.test.models;
 
 import com.fasterxml.jackson.annotation.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,6 +29,8 @@ public class SellPoint {
 
     @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "company_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Company company;
 
     @JsonProperty("phone_number")
@@ -36,10 +41,10 @@ public class SellPoint {
     private String address;
 
     @Column
-    private float latitude;
+    private Float latitude;
 
     @Column
-    private float longitude;
+    private Float longitude;
 
     @JsonIgnore
     @Transient
@@ -47,6 +52,8 @@ public class SellPoint {
 
     @JsonIgnore
     @ManyToOne
+    @JoinColumn(name = "user_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private User user;
 
     @PostLoad
@@ -74,10 +81,15 @@ public class SellPoint {
         this.name = name;
     }
     // Здесь мы запрашиваем id Company, чтобы при получении объекта из БД, временная перемененная получила id company, которая будет отдаваться в JSON-виде
-    public Long getCompanyId() { return companyId; }
+    @NotNull
+    public Long getCompanyId() {
+        if (companyId != null) {
+            return companyId;
+        }
+        return getCompany().getId();
+    }
 
     @JsonSetter("company")
-    @NotBlank
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
     }
@@ -96,6 +108,7 @@ public class SellPoint {
 
     public void setCompany(Company company) {
         this.company = company;
+        this.companyId = company.getId();
     }
 
     public String getPhoneNumber() {
@@ -114,19 +127,19 @@ public class SellPoint {
         this.address = address;
     }
 
-    public float getLatitude() {
+    public Float getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(float latitude) {
+    public void setLatitude(Float latitude) {
         this.latitude = latitude;
     }
 
-    public float getLongitude() {
+    public Float getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(float longitude) {
+    public void setLongitude(Float longitude) {
         this.longitude = longitude;
     }
 

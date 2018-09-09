@@ -5,11 +5,12 @@ import com.jayway.jsonpath.JsonPath;
 import kg.balance.test.configs.RESTConfiguration;
 import kg.balance.test.configs.SecurityConfiguration;
 import kg.balance.test.models.Company;
+import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
 import kg.balance.test.services.CompanyService;
+import kg.balance.test.services.SellPointService;
 import kg.balance.test.services.UserService;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -53,6 +56,9 @@ public class CompanyControllerTest {
     @Autowired
     UserService userService;
 
+    @Autowired
+    SellPointService sellPointService;
+
     private MockMvc mockMVC;
 
     private String adminAuthToken;
@@ -63,6 +69,10 @@ public class CompanyControllerTest {
 
     private Company firstCompany;
     private Company secondCompany;
+
+    private SellPoint firstSellPoint;
+    private SellPoint secondSellPoint;
+    private SellPoint thirdSellPoint;
 
     @Autowired
     @Qualifier("springSecurityFilterChain")
@@ -97,6 +107,37 @@ public class CompanyControllerTest {
         user_reg.setName("balance_user");
         user_reg.setPassword("Balance@User");
         userService.createUser(user_reg);
+
+
+        SellPoint firstSellPoint = new SellPoint();
+        firstSellPoint.setUserId(user.getId());
+        firstSellPoint.setCompanyId(firstCompany.getId());
+        firstSellPoint.setName("FirstSPName");
+        firstSellPoint.setPhoneNumber("+996123456001");
+
+        SellPoint secondSellPoint = new SellPoint();
+        secondSellPoint.setUserId(user_reg.getId());
+        secondSellPoint.setCompany(secondCompany);
+        secondSellPoint.setName("SecondSPName");
+        secondSellPoint.setPhoneNumber("+996123456002");
+
+        SellPoint thirdSellPoint = new SellPoint();
+        thirdSellPoint.setUser(user_reg);
+        thirdSellPoint.setCompany(secondCompany);
+        thirdSellPoint.setName("ThirdSPName");
+        thirdSellPoint.setPhoneNumber("+996123456003");
+
+        sellPointService.createSellPoint(user, firstSellPoint);
+        sellPointService.createSellPoint(user, secondSellPoint);
+        sellPointService.createSellPoint(user, thirdSellPoint);
+
+        for (SellPoint sellPoint: sellPointService.getSellPoints(null, null)) {
+            switch (sellPoint.getName()) {
+                case ("FirstSPName"): this.firstSellPoint = sellPoint;
+                case ("SecondSPName"): this.secondSellPoint = sellPoint;
+                case ("ThirdSPName"): this.thirdSellPoint = sellPoint;
+            }
+        }
 
         MvcResult res = mockMVC.perform(post("/auth/signin/")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -135,8 +176,10 @@ public class CompanyControllerTest {
 
         Map<String, Object> firstCompanyData = json.read(String.format("$.result.companies[%d]", first_company_idx));
         Map<String, Object> secondCompanyData = json.read(String.format("$.result.companies[%d]", second_company_idx));
-        assertThat(firstCompanyData.keySet().containsAll(Arrays.asList("name", "website", "sellpoints")), is(true));
-        assertThat(secondCompanyData.keySet().containsAll(Arrays.asList("name", "website", "sellpoints")), is(true));
+        assertThat(firstCompanyData.keySet().containsAll(Arrays.asList("id", "name", "website", "sellpoints")), is(true));
+        assertThat(secondCompanyData.keySet().containsAll(Arrays.asList("id", "name", "website", "sellpoints")), is(true));
+        assertThat(jsonPath(String.format("$.result.companies[%d].sellpoints.length()", first_company_idx)), is(1));
+        assertThat(jsonPath(String.format("$.result.companies[%d].sellpoints.length()", second_company_idx)), is(2));
         assertThat(firstCompanyData.keySet(), hasSize(4));
     }
 
@@ -151,6 +194,14 @@ public class CompanyControllerTest {
         DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
         assertThat(json.read("$.result.company.name"), is("AnotherTestCompany"));
         assertThat(json.read("$.result.company.website"), nullValue());
+        List<Map<String, String>> sellPoints = json.read("$.result.company.sellpoints");
+        assertThat(sellPoints, hasSize(2));
+        assertThat(sellPoints.get(0).get("id"), is(secondSellPoint.getId().toString()));
+        assertThat(sellPoints.get(0).get("name"), is(secondSellPoint.getName()));
+        assertThat(sellPoints.get(0).keySet(), hasSize(2));
+        assertThat(sellPoints.get(1).get("id"), is(thirdSellPoint.getId().toString()));
+        assertThat(sellPoints.get(1).get("name"), is(thirdSellPoint.getName()));
+        assertThat(sellPoints.get(1).keySet(), hasSize(2));
     }
 
     @Test
@@ -229,25 +280,31 @@ public class CompanyControllerTest {
 
     @Test
     public void testUpdateCompanyNonUniqueName() throws Exception {
+
         mockMVC.perform(put(String.format("/companies/%s", firstCompany.getId().toString()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Authorization", "Bearer " + adminAuthToken)
                 .content("{\"name\":\"AnotherTestCompany\", \"website\": \"test.com\"}")
-        ).andDo(MockMvcResultHandlers.print())
-                .andExpect(status().isConflict())
+        ).andExpect(status().isConflict())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.errorCode", is("duplicate_data_error")))
                 .andExpect(jsonPath("$.errorText", is("Field \"name\" must be unique")))
                 .andExpect(jsonPath("$.result", nullValue()));
 
         // Проверяем, не изменилось ли ничего
-        MvcResult result = mockMVC.perform(get("/companies/" + firstCompany.getId().toString())
+        //check();
+    }
+
+    @Transactional(propagation = Propagation.NEVER)
+    public void check () throws Exception {
+        MvcResult result_after = mockMVC.perform(get("/companies/" + firstCompany.getId().toString())
                 .header("Authorization", "Bearer " + adminAuthToken)
         ).andExpect(status().isOk()).andReturn();
-        DocumentContext json = JsonPath.parse(result.getResponse().getContentAsString());
-        assertThat(json.read("$.result.company.name"), is("TestCompany"));
-        assertThat(json.read("$.result.company.website"), nullValue());
+        DocumentContext json_after = JsonPath.parse(result_after.getResponse().getContentAsString());
+        assertThat(json_after.read("$.result.company.name"), is("TestCompany"));
+        assertThat(json_after.read("$.result.company.website"), is("https://test.kg/"));
     }
+
 
     @Test
     public void testUpdateCompanyNotFoundId() throws Exception {
@@ -266,7 +323,8 @@ public class CompanyControllerTest {
     public void testDeleteCompany() throws Exception {
         mockMVC.perform(delete(String.format("/companies/%s", firstCompany.getId().toString()))
                 .header("Authorization", "Bearer " + adminAuthToken)
-        ).andExpect(status().isOk())
+        ).andDo(MockMvcResultHandlers.print())
+                .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.errorCode", is("ok")))
                 .andExpect(jsonPath("$.errorText", nullValue()))
@@ -274,7 +332,7 @@ public class CompanyControllerTest {
         // Проверяем удаление
         mockMVC.perform(get(String.format("/companies/%s", firstCompany.getId().toString()))
                 .header("Authorization", "Bearer " + adminAuthToken)
-        ).andExpect(status().isNotFound())
+        ).andDo(MockMvcResultHandlers.print()).andExpect(status().isNotFound())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
                 .andExpect(jsonPath("$.errorCode", is("company_not_found")))
                 .andExpect(jsonPath("$.errorText", notNullValue(String.class)))

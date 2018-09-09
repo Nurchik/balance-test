@@ -38,7 +38,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 // Сразу пытаемся получить ID пользователя. Ошибки при парсинге токена обработаем позже
                 Long userId = jwtProvider.getUserId(jwtToken);
                 UserDetails userDetails = userDetailsService.loadUserById(userId);
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails.getUsername(), null, userDetails.getAuthorities());
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
