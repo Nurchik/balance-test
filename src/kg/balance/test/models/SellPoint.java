@@ -1,8 +1,6 @@
 package kg.balance.test.models;
 
 import com.fasterxml.jackson.annotation.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
@@ -30,6 +28,7 @@ public class SellPoint {
     @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "company_id")
+    // Здесь умышленно нет ответной части @OneToMany. В Company и User нам не нужно получать список привязанных точек продаж
     private Company company;
 
     @JsonProperty("phone_number")
@@ -62,6 +61,7 @@ public class SellPoint {
 
     @JsonProperty("id")
     @JsonFormat(shape = JsonFormat.Shape.STRING)
+    // Этот параметр мы получим только при сериализации, а при десериализации он будет игнорироваться
     public Long getId() {
         return id;
     }
@@ -78,13 +78,11 @@ public class SellPoint {
     public void setName(String name) {
         this.name = name;
     }
+
     // Здесь мы запрашиваем id Company, чтобы при получении объекта из БД, временная перемененная получила id company, которая будет отдаваться в JSON-виде
     @NotNull
     public Long getCompanyId() {
-        //if (companyId != null) {
         return companyId;
-        //}
-        //return getCompany().getId();
     }
 
     @JsonSetter("company")
@@ -97,6 +95,7 @@ public class SellPoint {
     }
 
     @JsonGetter("company")
+    // Для даноого парметра, будут сериализироваться только некоторые поля для каждой компании
     public Map<String, String> getTrimmedCompanyData () {
         Map<String, String> companyData = new HashMap<>();
         companyData.put("id", getCompany().getId().toString());
@@ -159,6 +158,7 @@ public class SellPoint {
     }
 
     @JsonGetter("user")
+    // Для даноого парметра, будут сериализироваться только некоторые поля для каждого пользователя
     public Map<String, String> getTrimmedUserData () {
         Map<String, String> userData = new HashMap<>();
         userData.put("id", getUser().getId().toString());

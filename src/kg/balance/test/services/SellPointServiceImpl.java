@@ -1,6 +1,5 @@
 package kg.balance.test.services;
 
-import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.dao.BalanceDAOImpl;
 import kg.balance.test.exceptions.CompanyNotFound;
 import kg.balance.test.exceptions.SellPointNotFound;
@@ -62,12 +61,14 @@ public class SellPointServiceImpl implements SellPointService {
     @Transactional(readOnly = true)
     public List<SellPoint> getSellPoints(Long userId, Long companyId) {
         List<SellPoint> sellPoints = sellPointRepository.list().orElse(new ArrayList<>());
+        // Если нужно получить все компании, companyId должен быть пустым
         if (companyId != null) {
             sellPoints = sellPoints
                     .stream()
                     .filter(sellPoint -> sellPoint.getCompanyId().equals(companyId))
                     .collect(Collectors.<SellPoint>toList());
         }
+        // Для админа данное поле будет null
         if (userId != null) {
             sellPoints = sellPoints
                     .stream()

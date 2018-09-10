@@ -1,12 +1,8 @@
 package kg.balance.test.services;
 
-
-import com.sun.org.apache.xpath.internal.operations.Bool;
-import kg.balance.test.dao.BalanceDAO;
 import kg.balance.test.dao.BalanceDAOImpl;
 import kg.balance.test.exceptions.UniqueConstraintViolation;
 import kg.balance.test.exceptions.UserNotFound;
-import kg.balance.test.models.SellPoint;
 import kg.balance.test.models.User;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
